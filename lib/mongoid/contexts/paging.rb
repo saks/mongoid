@@ -14,9 +14,9 @@ module Mongoid #:nodoc:
       # All previous <tt>limit</tt> and <tt>skip</tt> call will be ignored.
       def paginate(pager_options={})
 				if pager_options[:per_page]
-					options[:limit] = pager_options[:per_page]
+					options[:limit] = pager_options[:per_page].to_i
 					if pager_options[:page]
-						options[:skip]  = (pager_options[:page] - 1) * pager_options[:per_page]
+						options[:skip]  = (pager_options[:page].to_i - 1) * pager_options[:per_page].to_i
 					end
 				end
 
