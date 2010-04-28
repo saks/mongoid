@@ -22,6 +22,88 @@ describe Mongoid::Dirty do
       end
     end
 
+    context "when the attribute changes multiple times" do
+
+      before do
+        @person = Person.new(:title => "Grand Poobah")
+        @person.title = "Captain Obvious"
+        @person.title = "Dark Helmet"
+      end
+
+      it "returns an array of the original value and new value" do
+        @person.attribute_change("title").should ==
+          [ "Grand Poobah", "Dark Helmet" ]
+      end
+
+      it "allows access via (attribute)_change" do
+        @person.title_change.should ==
+          [ "Grand Poobah", "Dark Helmet" ]
+      end
+    end
+
+    context "when the attribute is modified in place" do
+
+      context "when the attribute is an array" do
+
+        before do
+          @person = Person.new(:aliases => [ "Grand Poobah" ])
+          @person.aliases[0] = "Dark Helmet"
+        end
+
+        it "returns an array of the original value and new value" do
+          @person.attribute_change("aliases").should ==
+            [ [ "Grand Poobah" ],  [ "Dark Helmet" ] ]
+        end
+
+        it "allows access via (attribute)_change" do
+          @person.aliases_change.should ==
+            [ [ "Grand Poobah" ],  [ "Dark Helmet" ] ]
+        end
+
+        context "when the attribute changes multiple times" do
+
+          before do
+            @person.aliases << "Colonel Sanders"
+          end
+
+          it "returns an array of the original value and new value" do
+            @person.attribute_change("aliases").should ==
+              [ [ "Grand Poobah" ],  [ "Dark Helmet", "Colonel Sanders" ] ]
+          end
+        end
+      end
+
+      context "when the attribute is a hash" do
+
+        before do
+          @person = Person.new(:map => { :location => "Home" })
+          @person.map[:location] = "Work"
+        end
+
+        it "returns an array of the original value and new value" do
+          @person.attribute_change("map").should ==
+            [ { :location => "Home" }, { :location => "Work" } ]
+        end
+
+        it "allows access via (attribute)_change" do
+          @person.map_change.should ==
+            [ { :location => "Home" }, { :location => "Work" } ]
+        end
+
+        context "when the attribute changes multiple times" do
+
+          before do
+            @person.map[:lat] = 20.0
+          end
+
+          it "returns an array of the original value and new value" do
+            @person.attribute_change("map").should ==
+              [ { :location => "Home" }, { :location => "Work", :lat => 20.0 } ]
+          end
+        end
+      end
+    end
+
     context "when the attribute has not changed" do
 
       before do
@@ -42,6 +124,19 @@ describe Mongoid::Dirty do
 
       it "returns an empty array" do
         @person.attribute_change("title").should be_nil
+      end
+    end
+
+    context "when the attribute is removed" do
+
+      before do
+        @person = Person.new(:title => "Grand Poobah")
+        @person.remove_attribute(:title)
+      end
+
+      it "returns an empty array" do
+        @person.attribute_change("title").should ==
+          [ "Grand Poobah", nil ]
       end
     end
   end

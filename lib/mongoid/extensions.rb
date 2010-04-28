@@ -61,7 +61,7 @@ class Hash #:nodoc
   include Mongoid::Extensions::Hash::Assimilation
   include Mongoid::Extensions::Hash::CriteriaHelpers
   include Mongoid::Extensions::Hash::Scoping
-  extend Mongoid::Extensions::Hash::Conversions
+  include Mongoid::Extensions::Hash::Conversions
 end
 
 class Integer #:nodoc
@@ -94,6 +94,6 @@ class Time #:nodoc
   extend Mongoid::Extensions::Time::Conversions
 end
 
-class Mongo::ObjectID #:nodoc
+class BSON::ObjectID #:nodoc
   extend Mongoid::Extensions::ObjectID::Conversions
 end

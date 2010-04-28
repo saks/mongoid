@@ -5,11 +5,11 @@
 
 Gem::Specification.new do |s|
   s.name = %q{mongoid}
-  s.version = "2.0.0.beta2"
+  s.version = "2.0.0.beta4"
 
   s.required_rubygems_version = Gem::Requirement.new("> 1.3.1") if s.respond_to? :required_rubygems_version=
   s.authors = ["Durran Jordan"]
-  s.date = %q{2010-04-05}
+  s.date = %q{2010-04-20}
   s.email = %q{durran@gmail.com}
   s.extra_rdoc_files = [
     "README.rdoc"
@@ -17,6 +17,7 @@ Gem::Specification.new do |s|
   s.files = [
     ".gitignore",
      ".watchr",
+     "Gemfile",
      "MIT_LICENSE",
      "README.rdoc",
      "Rakefile",
@@ -147,6 +148,7 @@ Gem::Specification.new do |s|
      "spec/integration/mongoid/named_scope_spec.rb",
      "spec/integration/mongoid/persistence/update_spec.rb",
      "spec/integration/mongoid/persistence_spec.rb",
+     "spec/models/account.rb",
      "spec/models/address.rb",
      "spec/models/animal.rb",
      "spec/models/callbacks.rb",
@@ -166,6 +168,7 @@ Gem::Specification.new do |s|
      "spec/models/phone.rb",
      "spec/models/post.rb",
      "spec/models/translation.rb",
+     "spec/models/user.rb",
      "spec/models/vet_visit.rb",
      "spec/models/video.rb",
      "spec/spec.opts",
@@ -219,6 +222,7 @@ Gem::Specification.new do |s|
      "spec/unit/mongoid/extensions/integer/conversions_spec.rb",
      "spec/unit/mongoid/extensions/nil/assimilation_spec.rb",
      "spec/unit/mongoid/extensions/object/conversions_spec.rb",
+     "spec/unit/mongoid/extensions/objectid/conversions_spec.rb",
      "spec/unit/mongoid/extensions/proc/scoping_spec.rb",
      "spec/unit/mongoid/extensions/string/conversions_spec.rb",
      "spec/unit/mongoid/extensions/string/inflections_spec.rb",
@@ -282,6 +286,7 @@ Gem::Specification.new do |s|
      "spec/integration/mongoid/named_scope_spec.rb",
      "spec/integration/mongoid/persistence/update_spec.rb",
      "spec/integration/mongoid/persistence_spec.rb",
+     "spec/models/account.rb",
      "spec/models/address.rb",
      "spec/models/animal.rb",
      "spec/models/callbacks.rb",
@@ -301,6 +306,7 @@ Gem::Specification.new do |s|
      "spec/models/phone.rb",
      "spec/models/post.rb",
      "spec/models/translation.rb",
+     "spec/models/user.rb",
      "spec/models/vet_visit.rb",
      "spec/models/video.rb",
      "spec/spec_helper.rb",
@@ -353,6 +359,7 @@ Gem::Specification.new do |s|
      "spec/unit/mongoid/extensions/integer/conversions_spec.rb",
      "spec/unit/mongoid/extensions/nil/assimilation_spec.rb",
      "spec/unit/mongoid/extensions/object/conversions_spec.rb",
+     "spec/unit/mongoid/extensions/objectid/conversions_spec.rb",
      "spec/unit/mongoid/extensions/proc/scoping_spec.rb",
      "spec/unit/mongoid/extensions/string/conversions_spec.rb",
      "spec/unit/mongoid/extensions/string/inflections_spec.rb",
@@ -404,24 +411,27 @@ Gem::Specification.new do |s|
     s.specification_version = 3
 
     if Gem::Version.new(Gem::RubyGemsVersion) >= Gem::Version.new('1.2.0') then
-      s.add_runtime_dependency(%q<activemodel>, [">= 3.0.0.beta2"])
-      s.add_runtime_dependency(%q<will_paginate>, [">= 3.0.pre"])
-      s.add_runtime_dependency(%q<mongo>, [">= 0.19.1"])
-      s.add_development_dependency(%q<rspec>, [">= 1.3.0"])
-      s.add_development_dependency(%q<mocha>, [">= 0.9.8"])
+      s.add_runtime_dependency(%q<activemodel>, ["= 3.0.0.beta3"])
+      s.add_runtime_dependency(%q<will_paginate>, ["= 3.0.pre"])
+      s.add_runtime_dependency(%q<mongo>, ["= 0.20.1"])
+      s.add_runtime_dependency(%q<bson>, ["= 0.20.1"])
+      s.add_development_dependency(%q<rspec>, ["= 1.3.0"])
+      s.add_development_dependency(%q<mocha>, ["= 0.9.8"])
     else
-      s.add_dependency(%q<activemodel>, [">= 3.0.0.beta2"])
-      s.add_dependency(%q<will_paginate>, [">= 3.0.pre"])
-      s.add_dependency(%q<mongo>, [">= 0.19.1"])
-      s.add_dependency(%q<rspec>, [">= 1.3.0"])
-      s.add_dependency(%q<mocha>, [">= 0.9.8"])
+      s.add_dependency(%q<activemodel>, ["= 3.0.0.beta3"])
+      s.add_dependency(%q<will_paginate>, ["= 3.0.pre"])
+      s.add_dependency(%q<mongo>, ["= 0.20.1"])
+      s.add_dependency(%q<bson>, ["= 0.20.1"])
+      s.add_dependency(%q<rspec>, ["= 1.3.0"])
+      s.add_dependency(%q<mocha>, ["= 0.9.8"])
     end
   else
-    s.add_dependency(%q<activemodel>, [">= 3.0.0.beta2"])
-    s.add_dependency(%q<will_paginate>, [">= 3.0.pre"])
-    s.add_dependency(%q<mongo>, [">= 0.19.1"])
-    s.add_dependency(%q<rspec>, [">= 1.3.0"])
-    s.add_dependency(%q<mocha>, [">= 0.9.8"])
+    s.add_dependency(%q<activemodel>, ["= 3.0.0.beta3"])
+    s.add_dependency(%q<will_paginate>, ["= 3.0.pre"])
+    s.add_dependency(%q<mongo>, ["= 0.20.1"])
+    s.add_dependency(%q<bson>, ["= 0.20.1"])
+    s.add_dependency(%q<rspec>, ["= 1.3.0"])
+    s.add_dependency(%q<mocha>, ["= 0.9.8"])
   end
 end
 

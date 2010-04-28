@@ -5,15 +5,13 @@ module Mongoid #:nodoc:
     included do
       include Mongoid::Components
 
-      cattr_accessor :embedded, :primary_key, :hereditary
-
-      self.embedded = false
+      cattr_accessor :primary_key, :hereditary
       self.hereditary = false
 
       attr_accessor :association_name, :_parent
       attr_reader :new_record
 
-      delegate :db, :embedded, :primary_key, :to => "self.class"
+      delegate :db, :primary_key, :to => "self.class"
     end
 
     module ClassMethods
@@ -82,12 +80,11 @@ module Mongoid #:nodoc:
     end
 
     module InstanceMethods
-      # Performs equality checking on the attributes. For now we chack against
-      # all attributes excluding timestamps on the object.
+      # Performs equality checking on the document ids. For more robust
+      # equality checking please override this method.
       def ==(other)
         return false unless other.is_a?(Document)
-        attributes.except(:modified_at).except(:created_at) ==
-          other.attributes.except(:modified_at).except(:created_at)
+        id == other.id
       end
 
       # Delegates to ==
@@ -134,15 +131,14 @@ module Mongoid #:nodoc:
       # an empty +Hash+.
       #
       # If a primary key is defined, the document's id will be set to that key,
-      # otherwise it will be set to a fresh +Mongo::ObjectID+ string.
+      # otherwise it will be set to a fresh +BSON::ObjectID+ string.
       #
       # Options:
       #
       # attrs: The attributes +Hash+ to set up the document with.
       def initialize(attrs = nil)
-        @attributes = {}
+        @attributes = default_attributes
         process(attrs)
-        @attributes = attributes_with_defaults(@attributes)
         @new_record = true if id.nil?
         document = yield self if block_given?
         identify
@@ -150,8 +146,12 @@ module Mongoid #:nodoc:
 
       # Returns the class name plus its attributes.
       def inspect
-        attrs = fields.map { |name, field| "#{name}: #{@attributes[name].inspect}" } * ", "
-        "#<#{self.class.name} _id: #{id}, #{attrs}>"
+        attrs = fields.map { |name, field| "#{name}: #{@attributes[name].inspect}" }
+        if Mongoid.allow_dynamic_fields
+          dynamic_keys = @attributes.keys - fields.keys - ["_id", "_type"]
+          attrs += dynamic_keys.map { |name| "#{name}: #{@attributes[name].inspect}" }
+        end
+        "#<#{self.class.name} _id: #{id}, #{attrs * ', '}>"
       end
 
       # Notify observers of an update.
@@ -188,7 +188,7 @@ module Mongoid #:nodoc:
 
       # Reloads the +Document+ attributes from the database.
       def reload
-        @attributes = collection.find_one(:_id => id)
+        @attributes = {}.merge(collection.find_one(:_id => id))
         self.associations.each { |association_name, association| unmemoize(association_name) }; self
       end
 
@@ -211,41 +211,6 @@ module Mongoid #:nodoc:
       # Return an array with this +Document+ only in it.
       def to_a
         [ self ]
-      end
-
-      # Return this document as a JSON string. Nothing special is required here
-      # since Mongoid bubbles up all the child associations to the parent
-      # attribute +Hash+ using observers throughout the +Document+ lifecycle.
-      #
-      # Example:
-      #
-      # <tt>person.to_json</tt>
-      def to_json(options = nil)
-        attributes.to_json(options)
-      end
-
-      # Return an object to be encoded into a JSON string.
-      # Used by Rails 3's object->JSON chain to create JSON
-      # in a backend-agnostic way
-      #
-      # Example:
-      #
-      # <tt>person.as_json</tt>
-      def as_json(options = nil)
-        attributes
-      end
-
-      # Return this document as an object to be encoded as JSON,
-      # with any particular items modified on a per-encoder basis.
-      # Nothing special is required here since Mongoid bubbles up
-      # all the child associations to the parent attribute +Hash+
-      # using observers throughout the +Document+ lifecycle.
-      #
-      # Example:
-      #
-      # <tt>person.encode_json(encoder)</tt>
-      def encode_json(encoder)
-        attributes
       end
 
       # Returns nil if document is new, or an array of primary keys if not.

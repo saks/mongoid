@@ -550,8 +550,8 @@ describe Mongoid::Contexts::Mongo do
 
   end
 
-	describe "#paginate use last passed arguments" do
-		before do
+  describe "#paginate use last passed arguments" do
+    before do
       @collection = mock
       Person.expects(:collection).returns(@collection)
       @criteria = Person.where(:_id => "1").skip(60).limit(20)
@@ -560,14 +560,13 @@ describe Mongoid::Contexts::Mongo do
         {:_type => { "$in" => ["Doctor", "Person"] }, :_id => "1"}, :skip => 20, :limit => 10
       ).returns([])
       @results = @context.paginate(:page => 3, :per_page => 10)
-		end
+    end
 
-		it 'uses last passed per_page and page value' do
+    it 'uses last passed per_page and page value' do
       @results.current_page.should == 3
       @results.per_page.should == 10
-		end
-
-	end
+    end
+  end
 
   describe "#sum" do
 
@@ -602,7 +601,7 @@ describe Mongoid::Contexts::Mongo do
 
     context "with a single argument" do
 
-      let(:id) { Mongo::ObjectID.new.to_s }
+      let(:id) { BSON::ObjectID.new.to_s }
 
       before do
         criteria.expects(:id).with(id).returns(criteria)
@@ -636,7 +635,7 @@ describe Mongoid::Contexts::Mongo do
       context "when an array of ids" do
 
         let(:ids) do
-          (0..2).inject([]) { |ary, i| ary << Mongo::ObjectID.new.to_s }
+          (0..2).inject([]) { |ary, i| ary << BSON::ObjectID.new.to_s }
         end
 
         context "when documents are found" do
@@ -670,7 +669,7 @@ describe Mongoid::Contexts::Mongo do
       context "when an array of object ids" do
 
         let(:ids) do
-          (0..2).inject([]) { |ary, i| ary << Mongo::ObjectID.new }
+          (0..2).inject([]) { |ary, i| ary << BSON::ObjectID.new }
         end
 
         context "when documents are found" do

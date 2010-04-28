@@ -13,12 +13,12 @@ module Mongoid #:nodoc:
       # A collection of documents paginated.
       # All previous <tt>limit</tt> and <tt>skip</tt> call will be ignored.
       def paginate(pager_options={})
-				if pager_options[:per_page]
-					options[:limit] = pager_options[:per_page].to_i
-					if pager_options[:page]
-						options[:skip]  = (pager_options[:page].to_i - 1) * pager_options[:per_page].to_i
-					end
-				end
+        if pager_options[:per_page]
+          options[:limit] = pager_options[:per_page].to_i
+          if pager_options[:page]
+            options[:skip]  = (pager_options[:page].to_i - 1) * pager_options[:per_page].to_i
+          end
+        end
 
         @collection ||= execute(true)
         WillPaginate::Collection.create(page, per_page, count) do |pager|

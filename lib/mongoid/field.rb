@@ -33,6 +33,7 @@ module Mongoid #:nodoc:
     #
     # <tt>Field.new(:score, :default => 0)</tt>
     def initialize(name, options = {})
+      check_name!(name)
       @name, @default = name, options[:default]
       @copyable = (@default.is_a?(Array) || @default.is_a?(Hash))
       @type = options[:type] || String
@@ -42,7 +43,7 @@ module Mongoid #:nodoc:
     # Used for setting an object in the attributes hash. If nil is provided the
     # default will get returned if it exists.
     def set(object)
-      object.nil? ? default : type.set(object)
+      type.set(object)
     end
 
     # Used for retrieving the object out of the attributes hash.
@@ -54,6 +55,11 @@ module Mongoid #:nodoc:
     # Slightly faster default check.
     def copy
       @copyable ? @default.dup : @default
+    end
+
+    # Check if the name is valid.
+    def check_name!(name)
+      raise Errors::InvalidField.new(name) if Mongoid.destructive_fields.include?(name.to_s)
     end
   end
 end

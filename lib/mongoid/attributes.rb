@@ -56,7 +56,7 @@ module Mongoid #:nodoc:
       # <tt>person.read_attribute(:title)</tt>
       def read_attribute(name)
         access = name.to_s
-        fields[access].get(@attributes[access])
+        accessed(access, fields[access].get(@attributes[access]))
       end
 
       # Remove a value from the +Document+ attributes. If the value does not exist
@@ -70,7 +70,8 @@ module Mongoid #:nodoc:
       #
       # <tt>person.remove_attribute(:title)</tt>
       def remove_attribute(name)
-        @attributes.delete(name.to_s)
+        access = name.to_s
+        modify(access, @attributes.delete(name.to_s), nil)
       end
 
       # Returns the object type. This corresponds to the name of the class that
@@ -103,7 +104,7 @@ module Mongoid #:nodoc:
       def write_attribute(name, value)
         access = name.to_s
         modify(access, @attributes[access], fields[access].set(value))
-        notify unless id.blank?
+        notify if !id.blank? && new_record?
       end
 
       # Writes the supplied attributes +Hash+ to the +Document+. This will only
@@ -123,7 +124,7 @@ module Mongoid #:nodoc:
       def write_attributes(attrs = nil)
         process(attrs || {})
         identified = !id.blank?
-        unless identified
+        if new_record? && !identified
           identify; notify
         end
       end
@@ -131,12 +132,12 @@ module Mongoid #:nodoc:
 
       protected
       # apply default values to attributes - calling procs as required
-      def attributes_with_defaults(attributes = {})
+      def default_attributes
         default_values = defaults
         default_values.each_pair do |key, val|
           default_values[key] = val.call if val.respond_to?(:call)
         end
-        default_values.merge(attributes)
+        default_values || {}
       end
 
       # Return true if dynamic field setting is enabled.

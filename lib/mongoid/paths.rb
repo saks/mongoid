@@ -3,7 +3,7 @@ module Mongoid #:nodoc:
   module Paths #:nodoc:
     extend ActiveSupport::Concern
     included do
-      cattr_accessor :_path
+      cattr_accessor :__path
       attr_accessor :_index
     end
     module InstanceMethods
@@ -13,8 +13,8 @@ module Mongoid #:nodoc:
       # Example:
       #
       # <tt>name.inserter</tt>
-      def inserter
-        embedded ? (_index ? "$push" : "$set") : nil
+      def _inserter
+        embedded? ? (_index ? "$push" : "$set") : nil
       end
 
       # Return the path to this +Document+ in JSON notation, used for atomic
@@ -23,9 +23,9 @@ module Mongoid #:nodoc:
       # Example:
       #
       # <tt>address.path # returns "addresses"</tt>
-      def path
-        self._path ||= lambda do
-          embedded ? "#{_parent.path}#{"." unless _parent.path.blank?}#{@association_name}" : ""
+      def _path
+        self.__path ||= lambda do
+          embedded? ? "#{_parent._path}#{"." unless _parent._path.blank?}#{@association_name}" : ""
         end.call
       end
 
@@ -34,9 +34,20 @@ module Mongoid #:nodoc:
       # Example:
       #
       # <tt>address.position</tt>
-      def position
+      def _position
         locator = _index ? (new_record? ? "" : ".#{_index}") : ""
-        embedded ? "#{_parent.position}#{"." unless _parent.position.blank?}#{@association_name}#{locator}" : ""
+        embedded? ? "#{_parent._position}#{"." unless _parent._position.blank?}#{@association_name}#{locator}" : ""
+      end
+
+      # Return the path to this +Document+ in JSON notation, used for atomic
+      # updates via $set in MongoDB.
+      #
+      # Example:
+      #
+      # <tt>address.path # returns "addresses"</tt>
+      def _pull
+        period = _position[_position.length - 2, 1]
+        (period == ".") ? _position[0, _position.length - 2] : _position
       end
 
       # Get the removal modifier for the document. Will be nil on root
@@ -45,8 +56,8 @@ module Mongoid #:nodoc:
       # Example:
       #
       # <tt>name.remover</tt>
-      def remover
-        embedded ? (_index ? "$set" : "$unset") : nil
+      def _remover
+        embedded? ? (_index ? "$pull" : "$unset") : nil
       end
 
       # Return the selector for this document to be matched exactly for use
@@ -55,8 +66,8 @@ module Mongoid #:nodoc:
       # Example:
       #
       # <tt>address.selector</tt>
-      def selector
-        embedded ? _parent.selector.merge("#{path}._id" => id) : { "_id" => id }
+      def _selector
+        embedded? ? _parent._selector.merge("#{_path}._id" => id) : { "_id" => id }
       end
     end
   end

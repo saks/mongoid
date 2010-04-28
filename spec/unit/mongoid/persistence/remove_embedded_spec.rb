@@ -18,17 +18,32 @@ describe Mongoid::Persistence::Remove do
     Email.new(:address => "test@example.com")
   end
 
+  let(:location) do
+    Location.new(:name => "Home")
+  end
+
   before do
     document.stubs(:collection).returns(collection)
   end
 
   describe "#persist" do
 
-    def root_set_expectation
+    def deep_pull_expectation
+      lambda {
+        collection.expects(:update).with(
+          { "_id" => document.id, "addresses._id" => address.id },
+          { "$pull" => { "addresses.0.locations" => { "_id" => location.id } } },
+          :multi => false,
+          :safe => true
+        ).returns("Object")
+      }
+    end
+
+    def root_pull_expectation
       lambda {
         collection.expects(:update).with(
           { "_id" => document.id },
-          { "$set" => { "addresses" => [] } },
+          { "$pull" => { "addresses" => { "_id" => address.id } } },
           :multi => false,
           :safe => true
         ).returns("Object")
@@ -84,6 +99,7 @@ describe Mongoid::Persistence::Remove do
     context "when the embedded document is an embeds_many" do
 
       before do
+        address.locations << location
         document.addresses << address
       end
 
@@ -93,7 +109,7 @@ describe Mongoid::Persistence::Remove do
           Mongoid::Persistence::RemoveEmbedded.new(address)
         end
 
-        it "notifies its changes to the parent and removes the parent" do
+        it "notifies its changes to the parent and removes the document" do
           remove.persist.should == true
           document.addresses.should == []
         end
@@ -109,8 +125,25 @@ describe Mongoid::Persistence::Remove do
           document.instance_variable_set(:@new_record, false)
         end
 
-        it "performs a $push on the embedded array" do
-          root_set_expectation.call
+        it "performs a $pull on the embedded array" do
+          root_pull_expectation.call
+          remove.persist.should == true
+        end
+      end
+
+      context "when embedded multiple levels" do
+
+        let(:remove) do
+          Mongoid::Persistence::RemoveEmbedded.new(location)
+        end
+
+        before do
+          document.instance_variable_set(:@new_record, false)
+          address.instance_variable_set(:@new_record, false)
+        end
+
+        it "performs a $pull on the embedded array" do
+          deep_pull_expectation.call
           remove.persist.should == true
         end
       end

@@ -108,7 +108,7 @@ describe Mongoid::Attributes do
     end
 
     it "delegates to #id=" do
-      @id = Mongo::ObjectID.new.to_s
+      @id = BSON::ObjectID.new.to_s
       @person._id = @id
       @person.id.should == @id
     end
@@ -394,10 +394,20 @@ describe Mongoid::Attributes do
       end
 
       it "returns the default value" do
-        @person.age = nil
         @person.age.should == 100
       end
 
+    end
+
+    context "when setting the attribute to nil" do
+
+      before do
+        @person = Person.new(:age => nil)
+      end
+
+      it "does not use the default value" do
+        @person.age.should be_nil
+      end
     end
 
     context "when field has a default value" do
@@ -413,12 +423,6 @@ describe Mongoid::Attributes do
 
     end
 
-  end
-
-  describe "#attributes=" do
-    it 'should be a alias of write_attributes' do
-
-    end
   end
 
   [:attributes=, :write_attributes].each do |method|

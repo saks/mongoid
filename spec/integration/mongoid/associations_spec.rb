@@ -107,6 +107,17 @@ describe Mongoid::Associations do
       @game.person.should == @person
     end
 
+    context "when defining a class name and foreign key" do
+
+      before do
+        @user = User.new(:name => "Don Julio")
+        @account = @user.account.build(:number => "1234567890")
+      end
+
+      it "sets the name of the association properly" do
+        @account.creator.should == @user
+      end
+    end
   end
 
   context "one-to-many relational associations" do
@@ -308,6 +319,20 @@ describe Mongoid::Associations do
 
     before do
       @person = Person.create(:title => "Mr")
+    end
+
+    context "saving an existing parent document" do
+
+      before do
+        @address = @person.addresses.create(:street => "Oxford St")
+        @address.city = "London"
+        @person.save
+      end
+
+      it "saves all dirty children" do
+        from_db = Person.find(@person.id)
+        from_db.addresses.first.city.should == "London"
+      end
     end
 
     context "one level nested" do

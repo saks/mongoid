@@ -6,6 +6,24 @@ describe Mongoid::Document do
     Person.delete_all
   end
 
+  context "creating anonymous documents" do
+
+    context "when defining collection" do
+
+      before do
+        @model = Class.new do
+          include Mongoid::Document
+          store_in :anonymous
+          field :gender
+        end
+      end
+
+      it "allows the creation" do
+        Object.const_set "Anonymous", @model
+      end
+    end
+  end
+
   describe "#db" do
 
     it "returns the mongo database" do
@@ -286,17 +304,34 @@ describe Mongoid::Document do
 
   describe "#inspect" do
 
-    before do
-      @person = Person.new
+    context "with allow_dynamic_fields=false" do
+      before do
+        Mongoid.configure.allow_dynamic_fields = false
+        @person = Person.new :title => "CEO"
+      end
+
+      it "returns a pretty string of class name and attributes" do
+        attrs = Person.fields.map do |name, field|
+          "#{name}: #{@person.attributes[name].nil? ? "nil" : @person.attributes[name].inspect}"
+        end * ", "
+        @person.inspect.should == "#<Person _id: #{@person.id}, #{attrs}>"
+      end
     end
 
-    it "returns a pretty string of class name and attributes" do
-      attrs = Person.fields.map do |name, field|
-        "#{name}: #{@person.attributes[name].nil? ? "nil" : @person.attributes[name]}"
-      end * ", "
-      @person.inspect.should == "#<Person _id: #{@person.id}, #{attrs}>"
-    end
+    context "with allow_dynamic_fields=true" do
+      before do
+        Mongoid.configure.allow_dynamic_fields = true
+        @person = Person.new :title => "CEO", :some_attribute => "foo"
+      end
 
+      it "returns a pretty string of class name, attributes, and dynamic attributes" do
+        attrs = Person.fields.map do |name, field|
+          "#{name}: #{@person.attributes[name].nil? ? "nil" : @person.attributes[name].inspect}"
+        end * ", "
+        attrs << ", some_attribute: #{@person.attributes['some_attribute'].inspect}"
+        @person.inspect.should == "#<Person _id: #{@person.id}, #{attrs}>"
+      end
+    end
   end
 
   describe "#paginate" do
@@ -500,7 +535,7 @@ describe Mongoid::Document do
     context "on a new document" do
 
       it "returns the json string" do
-        @person.to_json.should == @person.attributes.to_json
+        @person.to_json.should include('"pets":false')
       end
 
     end
@@ -510,7 +545,7 @@ describe Mongoid::Document do
       it "returns the json string" do
         @person.save
         from_db = Person.find(@person.id)
-        from_db.to_json.should == from_db.attributes.to_json
+        from_db.to_json.should include('"pets":false')
       end
 
     end
@@ -527,8 +562,8 @@ describe Mongoid::Document do
 
     context "on a new document" do
 
-      it "returns the attributes" do
-        @person.as_json.should == @person.attributes
+      it "returns the document (not sure why ActiveModel behaves like this)" do
+        @person.as_json.should == @person
       end
 
     end
@@ -538,7 +573,7 @@ describe Mongoid::Document do
       it "returns the attributes" do
         @person.save
         from_db = Person.find(@person.id)
-        from_db.as_json.should == from_db.attributes
+        from_db.as_json.should == from_db
       end
 
     end
@@ -551,13 +586,13 @@ describe Mongoid::Document do
       @person = Person.new(:title => "Sir", :age => 30)
       @address = Address.new(:street => "Nan Jing Dong Lu")
       @person.addresses << @address
-      @encoder = Array.new
+      @encoder = stub(:options => {})
     end
 
     context "on a new document" do
 
       it "returns the attributes" do
-        @person.encode_json(@encoder).should == @person.attributes
+        @person.encode_json(@encoder).should include('"pets":false')
       end
 
     end
@@ -567,7 +602,7 @@ describe Mongoid::Document do
       it "returns the attributes" do
         @person.save
         from_db = Person.find(@person.id)
-        from_db.encode_json(@encoder).should == from_db.attributes
+        from_db.encode_json(@encoder).should include('"pets":false')
       end
 
     end
