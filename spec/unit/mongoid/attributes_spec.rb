@@ -60,9 +60,10 @@ describe Mongoid::Attributes do
           end
 
           it "updates the existing attributes on the association" do
-            @person.addresses.size.should == 2
+            @person.addresses.size.should == 1
+            @person.addresses.first.street.should == "Folsom"
+            @person.addresses.first.city.should == "San Francisco"
           end
-
         end
 
       end
@@ -482,7 +483,7 @@ describe Mongoid::Attributes do
           it "sets the child attributes on the parent" do
             @name.send(method, :first_name => "Test2", :last_name => "User2")
             @person.attributes[:name].should ==
-              { "_id" => "test-user", "first_name" => "Test2", "last_name" => "User2", "_type" => "Name" }
+              { "_id" => "test-user", "first_name" => "Test2", "last_name" => "User2" }
           end
 
         end
@@ -498,7 +499,7 @@ describe Mongoid::Attributes do
           it "updates the child attributes on the parent" do
             @address.send(method, "street" => "Test2")
             @person.attributes[:addresses].should ==
-              [ { "_id" => "test", "street" => "Test2", "_type" => "Address" } ]
+              [ { "_id" => "test", "street" => "Test2" } ]
           end
 
         end

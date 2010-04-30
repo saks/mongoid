@@ -23,8 +23,8 @@ require "rubygems"
 
 gem "activemodel", "3.0.0.beta3"
 gem "will_paginate", "3.0.pre"
-gem "mongo", "0.20.1"
-gem "bson", "0.20.1"
+gem "mongo", "~>1.0"
+gem "bson", "~>1.0"
 
 require "delegate"
 require "singleton"
@@ -79,7 +79,6 @@ require "mongoid/validations"
 require "mongoid/versioning"
 require "mongoid/components"
 require "mongoid/document"
-require "mongoid/railtie"
 
 module Mongoid #:nodoc
 
