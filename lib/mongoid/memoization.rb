@@ -25,8 +25,10 @@ module Mongoid #:nodoc
       value = yield
       if instance_variable_defined?(var)
         remove_instance_variable(var)
-      else
-        instance_variable_set(var, value)
+      else 
+        if value and value.respond_to? :options and value.options.class == Mongoid::Associations::Options
+          instance_variable_set(var, value)
+        end
       end
     end
   end
