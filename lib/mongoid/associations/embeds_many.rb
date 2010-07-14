@@ -235,7 +235,9 @@ module Mongoid #:nodoc:
         count = criteria.size
         criteria.each do |doc|
           @target.delete(doc); doc.send(method)
-        end; count
+        end
+        @parent.unmemoize @association_name
+        count
       end
 
       class << self
