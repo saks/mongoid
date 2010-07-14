@@ -26,9 +26,7 @@ module Mongoid #:nodoc
       if instance_variable_defined?(var)
         remove_instance_variable(var)
       else 
-        if value and value.respond_to? :options and value.options.class == Mongoid::Associations::Options
-          instance_variable_set(var, value)
-        end
+        instance_variable_set(var, value) if value
       end
     end
   end
