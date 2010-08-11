@@ -7,14 +7,15 @@ module Mongoid #:nodoc
 
     attr_accessor \
       :allow_dynamic_fields,
+      :include_root_in_json,
       :reconnect_time,
       :parameterize_keys,
       :persist_in_safe_mode,
       :raise_not_found_error,
-      :use_object_ids,
+      :autocreate_indexes,
       :skip_version_check
 
-    # Defaults the configuration options to true.
+    # Initializes the configuration with default settings.
     def initialize
       reset
     end
@@ -56,7 +57,7 @@ module Mongoid #:nodoc
     #
     # Returns:
     #
-    # The Master DB instance.
+    # The master +Mongo::DB+ instance.
     def master=(db)
       check_database!(db)
       @master = db
@@ -73,14 +74,19 @@ module Mongoid #:nodoc
     #
     # The master +Mongo::DB+
     def master
-      @master || (raise Errors::InvalidDatabase.new(nil))
+      raise Errors::InvalidDatabase.new(nil) unless @master
+      if @reconnect
+        @reconnect = false
+        reconnect!
+      end
+      @master
     end
 
     alias :database :master
     alias :database= :master=
 
-    # Sets the Mongo::DB slave databases to be used. If the objects trying to me
-    # set are not valid +Mongo::DBs+, then an error will be raise.
+    # Sets the Mongo::DB slave databases to be used. If the objects provided
+    # are not valid +Mongo::DBs+ an error will be raised.
     #
     # Example:
     #
@@ -88,7 +94,7 @@ module Mongoid #:nodoc
     #
     # Returns:
     #
-    # The slaves DB instances.
+    # The slave DB instances.
     def slaves=(dbs)
       return unless dbs
       dbs.each do |db|
@@ -97,7 +103,7 @@ module Mongoid #:nodoc
       @slaves = dbs
     end
 
-    # Returns the slave databases, or if none has been set nil
+    # Returns the slave databases or nil if none have been set.
     #
     # Example:
     #
@@ -121,7 +127,7 @@ module Mongoid #:nodoc
       @logger = defined?(Rails) ? Rails.logger : ::Logger.new($stdout)
     end
 
-    # Sets the logger for Mongoid to use
+    # Sets the logger for Mongoid to use.
     #
     # Example:
     #
@@ -149,16 +155,32 @@ module Mongoid #:nodoc
       }.call
     end
 
-    # Configure mongoid from a hash that was usually parsed out of yml.
+    # Configure mongoid from a hash. This is usually called after parsing a
+    # yaml config file such as mongoid.yml.
     #
     # Example:
     #
     # <tt>Mongoid::Config.instance.from_hash({})</tt>
     def from_hash(settings)
+      settings.except("database", "slaves").each_pair do |name, value|
+        send("#{name}=", value) if respond_to?("#{name}=")
+      end
       _master(settings)
       _slaves(settings)
-      settings.except("database").each_pair do |name, value|
-        send("#{name}=", value) if respond_to?(name)
+    end
+
+    # Adds a new I18n locale file to the load path
+    #
+    # Example:
+    #
+    # Add portuguese locale
+    # <tt>Mongoid::config.add_language('pt')</tt>
+    #
+    # Adds all available languages
+    # <tt>Mongoid::Config.add_language('*')</tt>
+    def add_language(language_code = nil)
+      Dir[File.join(File.dirname(__FILE__), "..", "config", "locales", "#{language_code}.yml")].each do |file|
+        I18n.load_path << File.expand_path(file)
       end
     end
 
@@ -168,8 +190,14 @@ module Mongoid #:nodoc
     # Example:
     #
     # <tt>Mongoid.reconnect!</tt>
-    def reconnect!
-      master.connection.connect_to_master
+    def reconnect!(now = true)
+      if now
+        master.connection.connect
+      else
+        # We set a @reconnect flag so that #master knows to reconnect the next
+        # time the connection is accessed.
+        @reconnect = true
+      end
     end
 
     # Reset the configuration options to the defaults.
@@ -179,11 +207,12 @@ module Mongoid #:nodoc
     # <tt>config.reset</tt>
     def reset
       @allow_dynamic_fields = true
+      @include_root_in_json = false
       @parameterize_keys = true
-      @persist_in_safe_mode = true
+      @persist_in_safe_mode = false
       @raise_not_found_error = true
       @reconnect_time = 3
-      @use_object_ids = false
+      @autocreate_indexes = false
       @skip_version_check = false
       @time_zone = nil
     end
@@ -216,7 +245,7 @@ module Mongoid #:nodoc
       name = settings["database"] || mongo_uri.path.to_s.sub("/", "")
       host = settings["host"] || mongo_uri.host || "localhost"
       port = settings["port"] || mongo_uri.port || 27017
-      pool_size = settings["pool_size"] || 1 
+      pool_size = settings["pool_size"] || 1
       username = settings["username"] || mongo_uri.user
       password = settings["password"] || mongo_uri.password
 

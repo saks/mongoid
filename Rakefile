@@ -2,6 +2,8 @@ require "rake"
 require "rake/rdoctask"
 require "rspec"
 require "rspec/core/rake_task"
+require "bundler"
+Bundler.setup
 
 $LOAD_PATH.unshift File.expand_path("../lib", __FILE__)
 require "mongoid/version"
@@ -24,6 +26,11 @@ task :release => :build do
 end
 
 Rspec::Core::RakeTask.new(:spec) do |spec|
+  spec.pattern = "spec/**/*_spec.rb"
+end
+
+Rspec::Core::RakeTask.new('spec:progress') do |spec|
+  spec.spec_opts = %w(--format progress)
   spec.pattern = "spec/**/*_spec.rb"
 end
 

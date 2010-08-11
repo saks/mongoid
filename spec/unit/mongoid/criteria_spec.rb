@@ -95,7 +95,7 @@ describe Mongoid::Criteria do
 
       before do
         Person.expects(:collection).returns(@collection)
-        @collection.expects(:find).with({ :title => "Sir", :_type => { "$in" => ["Doctor", "Person"] } }, {}).returns(@cursor)
+        @collection.expects(:find).with({ :title => "Sir"}, {}).returns(@cursor)
       end
 
       it "executes the criteria and returns the element at the index" do
@@ -330,7 +330,7 @@ describe Mongoid::Criteria do
 
       before do
         Person.expects(:collection).returns(@collection)
-        @collection.expects(:find).with({ :_type => { "$in" => ["Doctor", "Person"] }, :title => "Sir" }, {}).returns(@cursor)
+        @collection.expects(:find).with({:title => "Sir"}, {}).returns(@cursor)
         @cursor.expects(:each).yields(@person)
       end
 
@@ -346,7 +346,7 @@ describe Mongoid::Criteria do
 
       before do
         Person.expects(:collection).returns(@collection)
-        @collection.expects(:find).with({ :_type => { "$in" => ["Doctor", "Person"] }, :title => "Sir" }, {}).returns(@cursor)
+        @collection.expects(:find).with({:title => "Sir"}, {}).returns(@cursor)
         @cursor.expects(:each).yields(@person)
       end
 
@@ -371,9 +371,7 @@ describe Mongoid::Criteria do
       before do
         Person.expects(:collection).returns(@collection)
         @collection.expects(:find).with(
-          { :_type => { "$in" => ["Doctor", "Person"] },
-            :title => "Sir"
-          },
+          { :title => "Sir" },
           { :cache => true }
         ).returns(@cursor)
         @cursor.expects(:each).yields(@person)
@@ -557,6 +555,14 @@ describe Mongoid::Criteria do
         @criteria.selector.should == { :title => "Sir", :terms => true, :age => { "$gt" => 50 } }
       end
 
+    end
+
+    context "when returning a non-criteria object" do
+      let(:ages) { [10, 20] }
+      it "does not attempt to merge" do
+        Person.stubs(:ages => ages)
+        expect { @criteria.ages }.to_not raise_error(NoMethodError)
+      end
     end
 
     context "when expecting behaviour of an array" do
@@ -841,6 +847,20 @@ describe Mongoid::Criteria do
       @result.selector[:title].should == 'Test'
       @result.options.should == { :skip => 10 }
     end
+  end
+
+  context "===" do
+
+    context "when the other object is a Criteria" do
+      subject { Mongoid::Criteria === Mongoid::Criteria.allocate }
+      it { should be_true }
+    end
+
+    context "when the other object is not compatible" do
+      subject { Mongoid::Criteria === [] }
+      it { should be_false }
+    end
+
   end
 
 end

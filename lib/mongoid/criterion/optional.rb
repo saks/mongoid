@@ -91,15 +91,24 @@ module Mongoid #:nodoc:
       #
       # Options:
       #
-      # object_id: A +String+ representation of a <tt>BSON::ObjectID</tt>
+      # object_id: A single id or an array of ids in +String+ or <tt>BSON::ObjectID</tt> format
       #
       # Example:
       #
       # <tt>criteria.id("4ab2bc4b8ad548971900005c")</tt>
+      # <tt>criteria.id(["4ab2bc4b8ad548971900005c", "4c454e7ebf4b98032d000001"])</tt>
       #
       # Returns: <tt>self</tt>
-      def id(*args)
-        (args.flatten.size > 1) ? self.in(:_id => args.flatten) : (@selector[:_id] = args.first)
+      def id(*ids)
+        ids.flatten!
+        if ids.size > 1
+          self.in(
+            :_id => ::BSON::ObjectID.cast!(@klass, ids, @klass.primary_key.nil?)
+          )
+        else
+          @selector[:_id] =
+            ::BSON::ObjectID.cast!(@klass, ids.first, @klass.primary_key.nil?)
+        end
         self
       end
 
@@ -143,10 +152,16 @@ module Mongoid #:nodoc:
         @options[:sort] = [] unless @options[:sort] || args.first.nil?
         arguments = args.first
         case arguments
-        when Hash then arguments.each { |field, direction| @options[:sort] << [ field, direction ] }
-        when Array then @options[:sort].concat(arguments)
+        when Hash
+          arguments.each do |field, direction|
+            @options[:sort] << [ field, direction ]
+          end
+        when Array
+          @options[:sort].concat(arguments)
         when Complex
-          args.flatten.each { |complex| @options[:sort] << [ complex.key, complex.operator.to_sym ] }
+          args.flatten.each do |complex|
+            @options[:sort] << [ complex.key, complex.operator.to_sym ]
+          end
         end; self
       end
 
@@ -168,7 +183,8 @@ module Mongoid #:nodoc:
         @options[:skip] = value; self
       end
 
-      # Adds a criterion to the +Criteria+ that specifies a type or an Array of type that must be matched.
+      # Adds a criterion to the +Criteria+ that specifies a type or an Array of
+      # type that must be matched.
       #
       # Options:
       #

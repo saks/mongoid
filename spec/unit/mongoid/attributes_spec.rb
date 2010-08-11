@@ -2,6 +2,60 @@ require "spec_helper"
 
 describe Mongoid::Attributes do
 
+  describe "#[]" do
+
+    context "when attribute does not exist" do
+
+      before do
+        @person = Person.new
+      end
+
+      it "returns the default value" do
+        @person[:age].should == 100
+        @person[:pets].should == false
+      end
+    end
+
+    context "when attribute is not accessible" do
+
+      before do
+        @person = Person.new
+        @person.owner_id = 5
+      end
+
+      it "returns the value" do
+        @person[:owner_id].should == 5
+      end
+    end
+  end
+
+  describe "#[]=" do
+
+    context "when setting the attribute to nil" do
+
+      before do
+        @person = Person.new
+      end
+
+      it "does not use the default value" do
+        @person[:age] = nil
+        @person.age.should be_nil
+      end
+    end
+
+    context "when field has a default value" do
+
+      before do
+        @person = Person.new
+      end
+
+      it "should allow overwriting of the default value" do
+        @person[:terms] = true
+        @person.terms.should be_true
+      end
+    end
+  end
+
   describe ".accepts_nested_attributes_for" do
 
     before do
@@ -70,15 +124,18 @@ describe Mongoid::Attributes do
             @person = Person.new(:title => "Sir", :ssn => "555-66-9999")
             @person.favorites.build(:title => "Ice Cream")
             @person.favorites.build(:title => "Jello")
+            @person.favorites.build(:title => "Ducce de Lecce")
             @attributes = {
-              "0" => { "_destroy" => "true" }
+              "0" => { "_destroy" => "true" },
+              "1" => { "_destroy" => "true" }
             }
             @person.favorites_attributes = @attributes
           end
 
           it "removes the items that have _destroy => true set" do
+            @person.favorites.class.should == Array
             @person.favorites.size.should == 1
-            @person.favorites.first.title.should == "Jello"
+            @person.favorites.first.title.should == "Ducce de Lecce"
           end
         end
 
@@ -143,6 +200,42 @@ describe Mongoid::Attributes do
           @person.name.first_name.should == "Fernando"
           @person.name.last_name.should == "Torres"
         end
+      end
+    end
+  end
+
+  describe ".attr_accessible" do
+
+    context "when the field is not _id" do
+
+      before do
+        @account = Account.new(:balance => 999999)
+      end
+
+      it "prevents setting via mass assignment" do
+        @account.balance.should be_nil
+      end
+    end
+
+    context "when the field is _id" do
+
+      before do
+        @account = Account.new(:_id => "ABBA")
+      end
+
+      it "prevents setting via mass assignment" do
+        @account._id.should_not == "ABBA"
+      end
+    end
+
+    context "when using instantiate" do
+
+      before do
+        @account = Account.instantiate("_id" => "1", "balance" => "ABBA")
+      end
+
+      it "ignores any protected attribute" do
+        @account.balance.should == "ABBA"
       end
     end
   end
@@ -230,6 +323,9 @@ describe Mongoid::Attributes do
         @person.testing.should == "Test"
       end
 
+      it "returns true for respond_to?" do
+        @person.respond_to?(:testing).should == true
+      end
     end
 
   end
@@ -469,26 +565,25 @@ describe Mongoid::Attributes do
         @person.read_attribute(:owner_id).should == 5
       end
     end
-
   end
-  
+
   describe "#attribute_present?" do
     context "when attribute does not exist" do
       before do
         @person = Person.new
       end
-      
+
       it "returns false" do
         @person.attribute_present?(:owner_id).should be_false
       end
     end
-    
+
     context "when attribute does exist" do
       before do
         @person = Person.new
         @person.owner_id = 5
       end
-      
+
       it "returns true" do
         @person.attribute_present?(:owner_id).should be_true
       end
@@ -530,7 +625,6 @@ describe Mongoid::Attributes do
       it "returns the default value" do
         @person.age.should == 100
       end
-
     end
 
     context "when setting the attribute to nil" do
@@ -554,7 +648,44 @@ describe Mongoid::Attributes do
         @person.terms = true
         @person.terms.should be_true
       end
+    end
+  end
 
+  describe "#typed_value_for" do
+
+    let(:person) { Person.new }
+
+    context "when the key has been specified as a field" do
+
+      before { person.stubs(:fields).returns({"age" => Integer}) }
+
+      it "retuns the typed value" do
+        person.fields["age"].expects(:set).with("51")
+        person.send(:typed_value_for, "age", "51")
+      end
+
+    end
+
+    context "when the key has not been specified as a field" do
+
+      before { person.stubs(:fields).returns({}) }
+
+      it "returns the value" do
+        person.send(:typed_value_for, "age", "51").should == "51"
+      end
+
+    end
+
+  end
+
+  describe "#default_attributes" do
+
+    let(:person) { Person.new }
+
+    it "typecasts proc values" do
+      person.stubs(:defaults).returns("age" => lambda { "51" })
+      person.expects(:typed_value_for).with("age", "51")
+      person.send(:default_attributes)
     end
 
   end

@@ -127,6 +127,42 @@ describe Mongoid::Validations::UniquenessValidator do
     end
   end
 
+  describe "#validate_each with embedded document" do
+
+    context "embeds_many" do
+      let(:person) { Person.new }
+      let(:favorite) { person.favorites.build(:title => "pizza") }
+      let(:validator) { Mongoid::Validations::UniquenessValidator.new(:attributes => favorite.attributes) }
+      let(:criteria) { stub(:exists? => false) }
+
+      it "excludes by attribute and id" do
+        person.favorites.expects(:where).with(:title => "pizza", :_id => {'$ne' => favorite.id}).returns(criteria)
+        validator.setup(Favorite)
+        validator.validate_each(favorite, :title, "pizza")
+      end
+    end
+    context "embeds_one" do
+      let(:person) { Patient.new }
+      let(:email) { Email.new(:address => "joe@example.com", :person => person) }
+      let(:validator) { Mongoid::Validations::UniquenessValidator.new(:attributes => email.attributes) }
+
+      it "no validations are run" do
+        email.expects(:where).never
+        validator.setup(Email)
+        validator.validate_each(email, :address, "joe@example.com")
+      end
+
+      context "when document has no parent" do
+        let(:person) { stub.quacks_like(nil) }
+        it "no validations are run" do
+          person.expects(:address).never
+          validator.setup(Email)
+          validator.validate_each(email, :address, "joe@example.com")
+        end
+      end
+    end
+  end
+
   describe "#validate_each with :scope option given" do
 
     before do
@@ -136,7 +172,7 @@ describe Mongoid::Validations::UniquenessValidator do
 
     describe "as a symbol" do
 
-      let(:validator) { Mongoid::Validations::UniquenessValidator.new(:attributes => @document.attributes, 
+      let(:validator) { Mongoid::Validations::UniquenessValidator.new(:attributes => @document.attributes,
                                                                       :scope => :employer_id) }
 
       it "should query only scoped documents" do
@@ -150,7 +186,7 @@ describe Mongoid::Validations::UniquenessValidator do
 
     describe "as an array" do
 
-      let(:validator) { Mongoid::Validations::UniquenessValidator.new(:attributes => @document.attributes, 
+      let(:validator) { Mongoid::Validations::UniquenessValidator.new(:attributes => @document.attributes,
                                                                       :scope => [:employer_id, :terms]) }
       it "should query only scoped documents" do
         Person.expects(:where).with(:title => "Sir").returns(@criteria)
