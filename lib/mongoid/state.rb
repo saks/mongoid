@@ -5,7 +5,7 @@ module Mongoid #:nodoc:
     # false if it has. This is determined by the variable @new_record
     # and NOT if the object has an id.
     def new_record?
-      @new_record == true
+      @new_record != false
     end
 
     # Sets the new_record boolean - used after document is saved.
